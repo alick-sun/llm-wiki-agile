@@ -1,0 +1,490 @@
+# LLM Wiki — Agile Entity Schema
+# 19 entity types across 6 families
+# Every typed document MUST include frontmatter with `type: <EntityName>`
+
+---
+# ============================================================================
+# Family: Structural — Product
+# Source: Manual frontmatter (hand-written when creating raw/ documents)
+# ============================================================================
+
+ProductRequirement:
+  description: "Product Requirement Document — top-level feature specification"
+  frontmatter_required:
+    type: "ProductRequirement"
+    prd_id: "string  # PRD-NNN"
+    title: "string"
+    status: "enum[draft, review, approved, deprecated]"
+    priority: "enum[P0, P1, P2, P3, P4]"
+  frontmatter_optional:
+    product_line: "string"
+    owner: "@TeamMember reference"
+    stakeholder: "[] of @TeamMember"
+    related_epics: "[] of Epic.epic_id"
+    version: "string"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+    created_at: "YYYY-MM-DD"
+    updated_at: "YYYY-MM-DD"
+  relations:
+    decomposes_into: "UserStory[]"
+    approved_by: "Decision"
+    blocks: "ProductRequirement[]"
+    relates_to: "DomainConcept[]"
+  raw_location: "10-product/prd/"
+
+UserStory:
+  description: "User story — vertical slice of functionality"
+  frontmatter_required:
+    type: "UserStory"
+    us_id: "string  # US-NNN"
+    title: "string"
+    status: "enum[todo, doing, done, cancelled]"
+  frontmatter_optional:
+    priority: "enum[P0, P1, P2, P3, P4]"
+    epic: "Epic.epic_id"
+    sprint: "Sprint.sprint_id"
+    story_points: "integer"
+    assignee: "@TeamMember reference"
+    acceptance_criteria: "[] of string"
+    version_affected: "[] of string"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+    created_at: "YYYY-MM-DD"
+    completed_at: "YYYY-MM-DD"
+  relations:
+    belongs_to: "Epic"
+    implemented_by: "Task[]"
+    blocked_by: "Bug[]"
+    tested_by: "TestCase[]"
+    relates_to: "ProductRequirement"
+    assignee: "TeamMember"
+  raw_location: "10-product/user-stories/"
+
+Epic:
+  description: "Epic — large body of work, theme-level aggregation"
+  frontmatter_required:
+    type: "Epic"
+    epic_id: "string  # EPIC-NNN"
+    title: "string"
+    status: "enum[planned, active, completed, cancelled]"
+  frontmatter_optional:
+    theme: "string"
+    business_value: "string"
+    start_date: "YYYY-MM-DD"
+    target_date: "YYYY-MM-DD"
+    owner: "@TeamMember"
+    progress_pct: "integer  # 0-100"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    contains: "UserStory[]"
+    contributes_to: "ProductRequirement"
+    owned_by: "TeamMember"
+  raw_location: "10-product/epics/"
+
+Task:
+  description: "Development task — implementable unit of work"
+  frontmatter_required:
+    type: "Task"
+    task_id: "string  # TASK-NNN"
+    title: "string"
+    status: "enum[todo, doing, done, review, blocked]"
+  frontmatter_optional:
+    task_type: "enum[dev, test, doc, ops, research]"
+    parent_us: "UserStory.us_id"
+    assignee: "@TeamMember"
+    estimated_hours: "integer"
+    actual_hours: "integer"
+    due_date: "YYYY-MM-DD"
+    git_branch: "string  # e.g. feat/auth-jwt"
+    pr_url: "string"
+    sprint: "Sprint.sprint_id"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    implements: "UserStory"
+    has_code: "CodeModule[]"
+    reviewed_in: "PullRequest"
+    assignee: "TeamMember"
+    part_of: "Sprint"
+  raw_location: "10-product/tasks/"
+
+Bug:
+  description: "Defect — bug report with lifecycle"
+  frontmatter_required:
+    type: "Bug"
+    bug_id: "string  # BUG-NNN"
+    title: "string"
+    severity: "enum[critical, high, medium, low]"
+    status: "enum[new, confirmed, in_progress, fixed, verified, closed, reopened]"
+  frontmatter_optional:
+    environment: "string"
+    reproduce_steps: "string"
+    root_cause: "string"
+    affected_versions: "[] of string"
+    reporter: "@TeamMember"
+    assignee: "@TeamMember"
+    sprint: "Sprint.sprint_id"
+    related_us: "UserStory.us_id"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+    created_at: "YYYY-MM-DD"
+    resolved_at: "YYYY-MM-DD"
+  relations:
+    blocks: "UserStory[]"
+    caused_by: "CodeModule[]"
+    fixed_by: "PullRequest"
+    reported_by: "TeamMember"
+  raw_location: "10-product/bugs/"
+
+---
+# ============================================================================
+# Family: Structural — Code
+# Source: Auto-extracted by Graphify AST pipeline
+# Human MAY add annotations via frontmatter in code-snippets/
+# ============================================================================
+
+CodeModule:
+  description: "Code module — file, class, or package (auto-extracted)"
+  frontmatter_required:
+    type: "CodeModule"
+    module_name: "string  # e.g. auth.middleware.JWTAuthenticator"
+  frontmatter_optional:
+    language: "string  # Python, TypeScript, Go..."
+    repo: "string"
+    path: "string  # relative path"
+    lines_of_code: "integer"
+    god_node_rank: "integer  # 1-100, from Graphify"
+    import_count: "integer"
+    imported_by_count: "integer"
+    last_commit_hash: "string"
+    last_commit_date: "YYYY-MM-DD"
+    author: "@TeamMember"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    imports: "CodeModule[]"
+    called_by: "CodeFunction[]"
+    serves: "APIEndpoint[]"
+    implements: "Task[]"
+    part_of: "GitRepo"
+  raw_location: "30-development/code-snippets/ (human annotations only)"
+  auto_extracted_from: "30-development/git-repos/*/"
+
+CodeFunction:
+  description: "Function or method (auto-extracted)"
+  frontmatter_required:
+    type: "CodeFunction"
+    func_name: "string"
+  frontmatter_optional:
+    signature: "string  # e.g. def authenticate(token: str) -> User"
+    module: "CodeModule.module_name"
+    lines: "integer"
+    cyclomatic_complexity: "integer"
+    is_public: "boolean"
+    decorators: "[] of string"
+    docstring_summary: "string"
+    test_coverage_pct: "integer"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    belongs_to: "CodeModule"
+    calls: "CodeFunction[]"
+    tested_by: "TestCase[]"
+    implements: "DomainConcept[]"
+  auto_extracted_from: "30-development/git-repos/*/"
+
+APIEndpoint:
+  description: "HTTP API endpoint (semi-auto: OpenAPI + human annotation)"
+  frontmatter_required:
+    type: "APIEndpoint"
+    endpoint_path: "string  # e.g. /api/v1/auth/wechat"
+    method: "enum[GET, POST, PUT, DELETE, PATCH]"
+  frontmatter_optional:
+    summary: "string"
+    tags: "[] of string"
+    request_schema: "string"
+    response_schema: "string"
+    auth_required: "boolean"
+    rate_limit: "string"
+    status: "enum[stable, deprecated, experimental]"
+    serving_module: "CodeModule.module_name"
+    tags_extra: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    served_by: "CodeModule"
+    consumes: "DataModel[]"
+    used_by: "UserStory[]"
+    documented_in: "DesignDoc"
+  raw_location: "20-design/api/"
+
+DataModel:
+  description: "Database table or schema (from DDL)"
+  frontmatter_required:
+    type: "DataModel"
+    model_name: "string  # e.g. UserAccount"
+    db_type: "enum[PostgreSQL, MySQL, Redis, MongoDB, SQLite, ClickHouse]"
+  frontmatter_optional:
+    schema: "string"
+    table_name: "string"
+    fields: "[] of {name, type, constraints}"
+    indexes: "[] of string"
+    estimated_rows: "integer"
+    last_migration: "string"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    supports: "DomainConcept[]"
+    queried_by: "CodeModule[]"
+    referenced_in: "APIEndpoint[]"
+  raw_location: "30-development/db-schemas/"
+
+---
+# ============================================================================
+# Family: Structural — Git
+# Source: Synced from git log / GitHub API
+# Human creates entries in 40-process/ to link PRs to tasks
+# ============================================================================
+
+PullRequest:
+  description: "Pull/Merge Request"
+  frontmatter_required:
+    type: "PullRequest"
+    pr_number: "integer"
+    title: "string"
+  frontmatter_optional:
+    branch_from: "string"
+    branch_to: "string"
+    author: "@TeamMember"
+    reviewer: "[] of @TeamMember"
+    status: "enum[open, merged, closed, draft]"
+    files_changed: "[] of string"
+    lines_added: "integer"
+    lines_deleted: "integer"
+    ci_status: "enum[pending, passed, failed]"
+    review_comments_count: "integer"
+    merged_at: "YYYY-MM-DD HH:mm"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    implements: "Task[]"
+    fixes: "Bug[]"
+    modifies: "CodeModule[]"
+    reviewed_by: "TeamMember[]"
+    author: "TeamMember"
+  raw_location: "40-process/pull-requests/"
+
+GitCommit:
+  description: "Git commit (usually auto-synced, rarely hand-written)"
+  frontmatter_required:
+    type: "GitCommit"
+    hash: "string  # short hash"
+    message: "string"
+  frontmatter_optional:
+    author: "@TeamMember"
+    date: "YYYY-MM-DD HH:mm"
+    files_changed: "[] of string"
+    insertions: "integer"
+    deletions: "integer"
+    associated_pr: "PullRequest.pr_number"
+    associated_task: "Task.task_id"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    part_of: "PullRequest"
+    modifies: "CodeModule[]"
+    author: "TeamMember"
+  auto_extracted_from: "git log"
+
+---
+# ============================================================================
+# Family: Conceptual
+# Source: LLM semantic extraction from documents
+# Human MAY confirm/reject auto-extracted concepts
+# ============================================================================
+
+DomainConcept:
+  description: "Business or technical concept (auto-extracted by LLM)"
+  frontmatter_required:
+    type: "DomainConcept"
+    name: "string"
+  frontmatter_optional:
+    aliases: "[] of string"
+    definition: "string"
+    source: "enum[team, industry, academic, vendor]"
+    confidence: "enum[high, medium, low]"
+    first_seen_date: "YYYY-MM-DD"
+    mentioned_in: "[] of docx tokens"
+    related_concepts: "[] of DomainConcept.name"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    specializes: "DomainConcept[]"
+    used_in: "UserStory[]"
+    implemented_by: "CodeFunction[]"
+    defined_in: "DesignDoc"
+  raw_location: "wiki/concepts/ (LLM-generated)"
+
+BusinessRule:
+  description: "Business rule or constraint (auto-extracted by LLM)"
+  frontmatter_required:
+    type: "BusinessRule"
+    rule_id: "string  # RULE-NNN"
+    description: "string"
+  frontmatter_optional:
+    rule_type: "enum[validation, calculation, workflow, authorization, notification]"
+    trigger_event: "string"
+    priority: "enum[critical, high, medium, low]"
+    enforced_by: "enum[code, manual, hybrid]"
+    source_doc: "string"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    constrains: "UserStory[]"
+    enforced_in: "CodeModule[]"
+    originates_from: "ProductRequirement"
+  raw_location: "wiki/concepts/rules/ (LLM-generated)"
+
+DesignPattern:
+  description: "Design or architectural pattern"
+  frontmatter_required:
+    type: "DesignPattern"
+    name: "string"
+  frontmatter_optional:
+    category: "enum[creational, structural, behavioral, architectural, concurrency]"
+    intent: "string"
+    applicability: "[] of string"
+    tradeoffs: "[] of {pro, con}"
+    implementation_example: "string"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    applied_in: "CodeModule[]"
+    related_to: "DesignPattern[]"
+  raw_location: "wiki/concepts/patterns/ (LLM-generated)"
+
+---
+# ============================================================================
+# Family: Process
+# Source: Manual frontmatter (meeting notes, sprint records, decisions)
+# ============================================================================
+
+Sprint:
+  description: "Sprint/iteration record"
+  frontmatter_required:
+    type: "Sprint"
+    sprint_id: "string  # Sprint-NN"
+    name: "string"
+    status: "enum[planning, active, review, closed]"
+  frontmatter_optional:
+    goal: "string"
+    start_date: "YYYY-MM-DD"
+    end_date: "YYYY-MM-DD"
+    velocity: "integer  # story points"
+    planned_points: "integer"
+    completed_points: "integer"
+    team: "[] of @TeamMember"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    contains: "UserStory[]"
+    contains_task: "Task[]"
+    reviewed_in: "Meeting[]"
+    retrospective: "Meeting"
+  raw_location: "40-process/sprints/"
+
+Meeting:
+  description: "Meeting notes"
+  frontmatter_required:
+    type: "Meeting"
+    meeting_id: "string  # MTG-NNN"
+    title: "string"
+    meeting_type: "enum[standup, planning, review, retrospective, ad_hoc, adr_review]"
+    date: "YYYY-MM-DD"
+  frontmatter_optional:
+    attendees: "[] of @TeamMember"
+    duration_min: "integer"
+    agenda: "[] of string"
+    decisions: "[] of string"
+    action_items: "[] of {task, assignee, deadline}"
+    recording_url: "string"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    discusses: "ArchitectureDecision[]"
+    reviews: "Sprint"
+    attended_by: "TeamMember[]"
+    produces: "ActionItem[]"
+  raw_location: "40-process/meeting-notes/"
+
+ArchitectureDecision:
+  description: "Architecture Decision Record (ADR)"
+  frontmatter_required:
+    type: "ArchitectureDecision"
+    adr_id: "string  # ADR-NNN"
+    title: "string"
+    status: "enum[proposed, accepted, deprecated, superseded]"
+  frontmatter_optional:
+    context: "string"
+    decision: "string"
+    consequences_positive: "[] of string"
+    consequences_negative: "[] of string"
+    alternatives_considered: "[] of {option, pros, cons}"
+    date: "YYYY-MM-DD"
+    deciders: "[] of @TeamMember"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    supersedes: "ArchitectureDecision[]"
+    decided_in: "Meeting"
+    affects: "CodeModule[]"
+  raw_location: "40-process/decisions/"
+
+Release:
+  description: "Software release"
+  frontmatter_required:
+    type: "Release"
+    version: "string  # e.g. 2.3.0"
+  frontmatter_optional:
+    codename: "string"
+    status: "enum[planned, in_progress, done, rolled_back]"
+    release_date: "YYYY-MM-DD"
+    features: "[] of UserStory.us_id"
+    bugfixes: "[] of Bug.bug_id"
+    breaking_changes: "[] of string"
+    rollback_plan: "string"
+    responsible: "@TeamMember"
+    tags: "[] of string"
+    related: "[] of entity IDs"
+  relations:
+    includes_us: "UserStory[]"
+    includes_bug: "Bug[]"
+    deploys: "CodeModule[]"
+    owned_by: "TeamMember"
+  raw_location: "40-process/releases/"
+
+---
+# ============================================================================
+# Family: People
+# Source: project-config.yaml (not frontmatter — defined once per project)
+# ============================================================================
+
+TeamMember:
+  description: "Team member (defined in config, not per-document frontmatter)"
+  config_location: "config/project-config.yaml"
+  fields:
+    name: "string"
+    role: "enum[PM, PD, FE, BE, QA, OPS, Arch, TL, EM]"
+    email: "string"
+    feishu_id: "string"
+    expertise: "[] of string"
+    current_sprint_capacity: "integer  # story points"
+    active_since: "YYYY-MM-DD"
+    is_active: "boolean"
+  relations:
+    owns: "UserStory[]"
+    authors: "PullRequest[]"
+    attends: "Meeting[]"
+    reports: "Bug[]"
+    decides: "ArchitectureDecision[]"

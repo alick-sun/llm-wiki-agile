@@ -1,0 +1,39 @@
+# Environment and config
+config/wiki-config.json
+.wiki-state.json
+
+# Raw sources (user's content)
+raw/
+
+# Graphify output
+graphify-out/
+*.graph.json
+GRAPH_REPORT.md
+
+# Node modules
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Session files
+SESSION.md
+STATUS.txt
+
+# Test files
+test-*.md
+*.test.md
