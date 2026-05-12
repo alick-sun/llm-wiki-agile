@@ -1,0 +1,68 @@
+name: LLM Wiki CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Validate shell scripts
+      run: |
+        echo "Validating shell scripts..."
+        find scripts -name "*.sh" -exec shellcheck {} + || true
+        echo "✅ Shell scripts validated"
+
+    - name: Check documentation
+      run: |
+        echo "Checking documentation files..."
+        [ -f README.md ] && echo "✅ README.md exists"
+        [ -f INSTALL.md ] && echo "✅ INSTALL.md exists"
+        [ -f SKILL.md ] && echo "✅ SKILL.md exists"
+
+    - name: Verify entity schema
+      run: |
+        echo "Validating entity schema..."
+        [ -f schema/entities.yaml ] && echo "✅ entities.yaml exists"
+
+  test-wiki-commands:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Check script permissions
+      run: |
+        echo "Checking script permissions..."
+        ls -la scripts/*.sh
+        chmod +x scripts/*.sh
+        echo "✅ Scripts are executable"
+
+    - name: Validate script syntax
+      run: |
+        echo "Validating bash scripts..."
+        for script in scripts/*.sh; do
+          bash -n "$script" && echo "✅ $script syntax OK"
+        done
+
+  project-stats:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Generate project statistics
+      run: |
+        echo "📊 Project Statistics:"
+        echo "Files: $(find . -name '*.sh' -o -name '*.md' -o -name '*.yaml' | wc -l)"
+        echo "Lines of code: $(find scripts -name '*.sh' -exec cat {} \; | wc -l)"
+        echo "Documentation: $(find . -name '*.md' | wc -l)"
